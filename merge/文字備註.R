@@ -1,20 +1,24 @@
 setwd('/Users/lintzujeng/Documents/GitHub/R_Project/merge')
+#指定資料夾
 library("tidyverse")
 library("openxlsx")
+#導入package
 
 odf <- read.xlsx('orange_market.xlsx')
 weather <- read.csv('weather.csv', header = T)
-
+#導入資料
 
 names(odf)[1] = "id"
-#weather$平均 <- NULL
-#weather[6,] <- NA
+#將日期設為id
 weather2 <- weather[-6,]
 weather2$平均 <- NULL
 weather2$年.月 <- as.numeric(weather2$年.月)
+#將氣溫資料選出
 
 library(stringr)
+#導入字串調整package
 weather.just <- data.frame(id = c(NA), 氣溫 = c(NA))
+#建立新dataframe<weather.just>
 for (y in 1:nrow(weather2)) {
   for(m in 1:ncol(weather2)){
     print(weather2[y,m])
@@ -40,13 +44,17 @@ for (y in 1:nrow(weather2)) {
     }
   }
 }
+# Normalize id
 weather.just <- na.omit(weather.just)
+# omit NA
 weather.just$氣溫<-as.numeric(weather.just$氣溫)
 
 
 odf.merged <- inner_join(odf, weather.just, by = "id")
+#join 兩個 dataframes
 
 temp.ranges <- table(cut(odf.merged$氣溫, breaks = seq(15, 30, by = 2)))
+#氣溫數值分區（水桶）
 temp.trade <- numeric(7)
 for (trade in 1:nrow(odf.merged)) {
   if (odf.merged$氣溫[trade] <= 17){
@@ -72,14 +80,17 @@ for (trade in 1:nrow(odf.merged)) {
   }
   
 }
+#將交易金額summarize到水桶裡
 temp.df <- data.frame(temp.ranges, temp.trade)
-
+#整理成一個dataframe
 hist.plot <- ggplot(data = temp.df, aes(x = Var1, y = temp.trade)) +
   geom_bar(stat = "identity") + 
   xlab("氣溫(度)") +
   ylab("交易金額(元)")
 hist.plot
+#繪圖
 
 ggsave("hist.png", hist.plot)
 library(writexl)
 write_xlsx(odf.merged, "merged_data.xlsx")
+#輸出 histogram 和 merged excel
